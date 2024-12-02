@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("postgresql://postgreg1:winc123@localhost:5432/Examen2-dbshadow")
+}
+
+model Amenity {
+  id       String     @id @default(uuid())
+  name     String
+  Property Property[] @relation("PropertyAmenities")
+}
+
+model Booking {
+  id         String   @id
+  startDate  DateTime
+  endDate    DateTime
+  propertyId String
+  userId     String
+  Property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  User       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Host {
+  id             String     @id
+  username       String     @unique
+  name           String
+  email          String
+  phoneNumber    String
+  profilePicture String?
+  aboutMe        String?
+  Property       Property[]
+}
+
+model Property {
+  id            String    @id
+  title         String
+  description   String
+  location      String
+  pricePerNight Float
+  bedroomCount  Int
+  bathroomCount Int
+  maxGuestCount Int
+  rating        Float
+  hostId        String
+  Booking       Booking[]
+  Host          Host      @relation(fields: [hostId], references: [id])
+  Review        Review[]
+  Amenity       Amenity[] @relation("PropertyAmenities")
+}
+
+model Review {
+  id         String   @id
+  rating     Float
+  comment    String?
+  propertyId String
+  userId     String
+  Property   Property @relation(fields: [propertyId], references: [id])
+  User       User     @relation(fields: [userId], references: [id])
+}
+
+model User {
+  id             String    @id
+  username       String    @unique
+  name           String
+  password       String
+  email          String
+  phoneNumber    String
+  profilePicture String?
+  Booking        Booking[]
+  Review         Review[]
+}
