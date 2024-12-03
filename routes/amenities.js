@@ -27,9 +27,9 @@ router.get("/", async (req, res) => {
 router.post("/", verifyToken, async (req, res) => {
   const { id, name } = req.body;
 
-  if (!id || !name) {
-    return res.status(400).json({ message: "id and name are required" }); // 400 Bad Request for missing fields
-  }
+  // if (!id || !name) {
+  //   return res.status(400).json({ message: "id and name are required" }); // 400 Bad Request for missing fields
+  // }
   try {
     // Create the new amenity
     const newAmenity = await prisma.amenity.create({

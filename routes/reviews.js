@@ -60,6 +60,7 @@ router.post("/", verifyToken, async (req, res) => {
     // Create the new review without specifying the id
     const newReview = await prisma.review.create({
       data: {
+        // id,
         rating,
         comment,
         userId,

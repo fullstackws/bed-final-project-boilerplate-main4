@@ -43,20 +43,48 @@ router.get("/", async (req, res) => {
 
 // POST /bookings - Create a new booking
 router.post("/", verifyToken, async (req, res) => {
-  const { startDate, endDate, userId, propertyId } = req.body;
+  const {
+    numberOfGuests,
+    checkinDate,
+    checkoutDate,
+    userId,
+    propertyId,
+    totalPrice,
+    bookingStatus,
+  } = req.body;
+
+  // Validate dates
+  const startDate = new Date(checkinDate);
+  const endDate = new Date(checkoutDate);
+
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    return res.status(400).json({
+      message:
+        "Invalid checkinDate or checkoutDate. Please provide valid dates.",
+    });
+  }
 
   // Validate required fields
-  if (!startDate || !endDate || !userId || !propertyId) {
+  if (!userId || !propertyId) {
     return res.status(400).json({
-      message: "Start date, end date, user ID, and property ID are required", // 400 Bad Request for missing fields
+      message: "userId and propertyId are required.",
+    });
+  }
+
+  // Validate numberOfGuests (must be a positive integer or set a default value)
+  if (numberOfGuests && (isNaN(numberOfGuests) || numberOfGuests <= 0)) {
+    return res.status(400).json({
+      message: "numberOfGuests must be a positive integer.",
     });
   }
 
   try {
     // Check if the user exists
-    const userExists = await prisma.user.findUnique({ where: { id: userId } });
+    const userExists = await prisma.user.findUnique({
+      where: { id: userId },
+    });
     if (!userExists) {
-      return res.status(404).json({ message: "User not found" }); // 404 Not Found if user doesn't exist
+      return res.status(404).json({ message: "User not found." });
     }
 
     // Check if the property exists
@@ -64,20 +92,23 @@ router.post("/", verifyToken, async (req, res) => {
       where: { id: propertyId },
     });
     if (!propertyExists) {
-      return res.status(404).json({ message: "Property not found" }); // 404 Not Found if property doesn't exist
+      return res.status(404).json({ message: "Property not found." });
     }
 
-    // Create the new booking
+    // Create the booking
     const newBooking = await prisma.booking.create({
       data: {
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate,
+        endDate,
         userId,
         propertyId,
+        numberOfGuests: numberOfGuests || 1, // Default to 1 if numberOfGuests is not provided
+        totalPrice,
+        bookingStatus,
       },
     });
 
-    return res.status(201).json(newBooking); // 201 Created for successfully creating a new booking
+    return res.status(201).json(newBooking); // Return the newly created booking
   } catch (err) {
     console.error("Error creating booking: ", err);
     return res.status(500).json({ message: "Server error" });
@@ -116,13 +147,29 @@ router.get("/:id", async (req, res) => {
 // PUT /bookings/:id - Update a booking by id
 router.put("/:id", verifyToken, async (req, res) => {
   const { id } = req.params;
-  const { startDate, endDate, userId, propertyId } = req.body;
+  const {
+    checkinDate,
+    checkoutDate,
+    numberOfGuests,
+    totalPrice,
+    bookingStatus,
+    userId,
+    propertyId,
+  } = req.body;
 
   // Ensure that at least one field is provided for the update
-  if (!startDate && !endDate && !userId && !propertyId) {
+  if (
+    !checkinDate &&
+    !checkoutDate &&
+    !numberOfGuests &&
+    !totalPrice &&
+    !bookingStatus &&
+    !userId &&
+    !propertyId
+  ) {
     return res.status(400).json({
       message:
-        "At least one field (startDate, endDate, userId, propertyId) is required", // 400 Bad Request if no fields provided
+        "At least one field (checkinDate, checkoutDate, numberOfGuests, totalPrice, bookingStatus, userId, propertyId) is required", // 400 Bad Request if no fields provided
     });
   }
 
@@ -136,8 +183,11 @@ router.put("/:id", verifyToken, async (req, res) => {
     const updatedData = {};
 
     // Update the fields if provided
-    if (startDate) updatedData.startDate = new Date(startDate);
-    if (endDate) updatedData.endDate = new Date(endDate);
+    if (checkinDate) updatedData.startDate = new Date(checkinDate);
+    if (checkoutDate) updatedData.endDate = new Date(checkoutDate);
+    if (numberOfGuests) updatedData.numberOfGuests = numberOfGuests;
+    if (totalPrice) updatedData.totalPrice = totalPrice;
+    if (bookingStatus) updatedData.bookingStatus = bookingStatus;
     if (userId) updatedData.userId = userId;
     if (propertyId) updatedData.propertyId = propertyId;
 

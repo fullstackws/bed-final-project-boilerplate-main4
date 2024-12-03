@@ -37,12 +37,13 @@ router.get("/", async (req, res) => {
 
 // POST /hosts - Create a new host
 router.post("/", verifyToken, async (req, res) => {
-  const { username, email, password, aboutMe } = req.body;
+  const { username, name, email, phoneNumber, profilePicture, aboutMe } =
+    req.body;
 
-  if (!username || !email || !password) {
+  if (!username || !name || !email || !phoneNumber) {
     return res
       .status(400)
-      .json({ message: "Username, email, and password are required" }); // 400 Bad Request for missing fields
+      .json({ message: "Username, name, email, and phoneNumber are required" });
   }
 
   try {
@@ -56,26 +57,28 @@ router.post("/", verifyToken, async (req, res) => {
     if (existingHost) {
       return res
         .status(400)
-        .json({ message: "Username or email already taken" }); // 400 Bad Request if username or email exists
+        .json({ message: "Username or email already taken" });
     }
 
-    // Create the new host (password is stored in plain text)
+    // Create the new host
     const newHost = await prisma.host.create({
       data: {
         username,
+        name,
         email,
-        password, // Store the plain-text password
+        phoneNumber,
+        profilePicture,
         aboutMe,
       },
     });
 
-    // Exclude password from the response
+    // Exclude password from the response (no password is being used)
     const { password: _, ...hostWithoutPassword } = newHost;
 
-    return res.status(201).json(hostWithoutPassword); // 201 Created for successfully creating a new host
+    return res.status(201).json(hostWithoutPassword); // Return the newly created host
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Server error" }); // 500 Internal Server Error
+    console.error("Error creating host: ", err);
+    return res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -152,30 +155,28 @@ router.delete("/:id", verifyToken, async (req, res) => {
   const { id } = req.params;
 
   try {
-    // First, delete all bookings associated with this host
-    await prisma.booking.deleteMany({
-      where: {
-        property: {
-          hostId: id, // Find bookings related to properties owned by this host
-        },
-      },
-    });
-    console.log(`All bookings for host with ID ${id} have been deleted.`);
+    // Check if the host exists before deleting
+    const hostExists = await prisma.host.findUnique({ where: { id } });
+    if (!hostExists) {
+      return res.status(404).json({ message: "Host not found" });
+    }
 
-    // Now proceed to delete the host
+    // Delete all properties associated with the host
+    await prisma.property.deleteMany({
+      where: { hostId: id },
+    });
+
+    // Now, delete the host
     const deletedHost = await prisma.host.delete({
       where: { id },
     });
 
     return res.status(200).json({
-      message: `Host ${deletedHost.username} deleted successfully`, // 200 OK for successful deletion
+      message: `Host ${deletedHost.username} and associated properties deleted successfully`,
     });
   } catch (err) {
     console.error("Error deleting host: ", err);
-    if (err.code === "P2025") {
-      return res.status(404).json({ message: "Host not found" }); // Handle case where host is not found
-    }
-    return res.status(500).json({ message: "Server error" }); // 500 Internal Server Error
+    return res.status(500).json({ message: "Server error" });
   }
 });
 

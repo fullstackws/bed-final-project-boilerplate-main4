@@ -109,7 +109,7 @@ async function main() {
           location: propertyData.location,
           pricePerNight: parseFloat(propertyData.pricePerNight),
           bedroomCount: propertyData.bedroomCount || 0,
-          bathroomCount: propertyData.bathroomCount || 1, // Default to 1 if not provided
+          bathRoomCount: propertyData.bathRoomCount || 1, // Default to 1 if not provided
           maxGuestCount: propertyData.maxGuestCount || 1,
           rating: propertyData.rating || 0,
           Host: { connect: { id: propertyData.hostId } }, // Connect to the existing host by id
@@ -121,7 +121,7 @@ async function main() {
           location: propertyData.location,
           pricePerNight: parseFloat(propertyData.pricePerNight),
           bedroomCount: propertyData.bedroomCount || 0,
-          bathroomCount: propertyData.bathroomCount || 1, // Default to 1 if not provided
+          bathRoomCount: propertyData.bathRoomCount || 1, // Default to 1 if not provided
           maxGuestCount: propertyData.maxGuestCount || 1,
           rating: propertyData.rating || 0,
           Host: { connect: { id: propertyData.hostId } }, // Connect to the existing host by id
@@ -177,6 +177,9 @@ async function main() {
             endDate: endDate,
             userId: bookingData.userId,
             propertyId: bookingData.propertyId,
+            numberOfGuests: bookingData.numberOfGuests,
+            totalPrice: bookingData.totalPrice,
+            bookingStatus: bookingData.bookingStatus,
           },
         });
         console.log(`Booking ${bookingData.id} created successfully.`);

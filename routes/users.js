@@ -26,7 +26,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET /users/:id - Fetch a single user by ID (without password)
 // GET /users/:id - Fetch a single user by ID
 router.get("/:id", async (req, res) => {
   const { id } = req.params; // Extract user ID from URL parameters
@@ -55,17 +54,17 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// POST /users - Create a new user
+// POST /users - Create a new user (no required field validation)
 router.post("/", verifyToken, async (req, res) => {
-  const { username, email, password, name, phoneNumber, profilePicture } =
-    req.body;
-
-  // Validate required fields
-  // if (!username || !email || !password || !name) {
-  //   return res
-  //     .status(400)
-  //     .json({ message: "Username, email, password, and name are required" });
-  // }
+  const {
+    username,
+    email,
+    password,
+    name,
+    phoneNumber,
+    profilePicture,
+    aboutMe,
+  } = req.body;
 
   try {
     // Check if username or email already exists
@@ -79,29 +78,30 @@ router.post("/", verifyToken, async (req, res) => {
         .json({ message: "Username or email already taken" });
     }
 
-    // Create the new user
+    // Create the new user with the provided fields
     const newUser = await prisma.user.create({
-      data: { username, email, password, name, phoneNumber, profilePicture },
-      // select: { username: true, email: true, name: true },
+      data: {
+        username,
+        email,
+        password,
+        name,
+        phoneNumber,
+        profilePicture,
+        aboutMe,
+      },
     });
 
     return res.status(201).json(newUser); // Returns the created user
   } catch (err) {
-    console.error(err);
+    console.error("Error creating user:", err);
     return res.status(500).json({ message: "Server error" });
   }
 });
 
-// PUT /users/:id - Update a user by ID
+// PUT /users/:id - Update a user by ID (no required field validation)
 router.put("/:id", verifyToken, async (req, res) => {
   const { id } = req.params;
   const { username, email, name, phoneNumber, profilePicture } = req.body;
-
-  if (!username && !email && !name && !phoneNumber && !profilePicture) {
-    return res
-      .status(400)
-      .json({ message: "At least one field is required for update" });
-  }
 
   try {
     // Check if the user exists before updating
@@ -110,20 +110,11 @@ router.put("/:id", verifyToken, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Prepare update data
-    const updateData = {};
-    if (username) updateData.username = username;
-    if (email) updateData.email = email;
-    if (name) updateData.name = name;
-    if (phoneNumber) updateData.phoneNumber = phoneNumber;
-    if (profilePicture) updateData.profilePicture = profilePicture;
-
-    // Update the user
+    // Update the user with the provided fields
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: updateData,
+      data: { username, email, name, phoneNumber, profilePicture },
       select: {
-        // id: true,
         username: true,
         email: true,
         name: true,
@@ -150,12 +141,27 @@ router.delete("/:id", verifyToken, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // Delete all reviews associated with the user
+    await prisma.review.deleteMany({
+      where: { userId: id },
+    });
+
+    // Now, delete the user
     const deletedUser = await prisma.user.delete({ where: { id } });
+
     return res
       .status(200)
       .json({ message: `User ${deletedUser.username} deleted successfully` });
   } catch (err) {
     console.error(err);
+
+    if (err.code === "P2003") {
+      // Handle foreign key constraint error
+      return res.status(400).json({
+        message: "Unable to delete user due to foreign key constraints",
+      });
+    }
+
     return res.status(500).json({ message: "Server error" });
   }
 });
