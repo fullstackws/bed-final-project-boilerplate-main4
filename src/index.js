@@ -11,7 +11,7 @@ import propertiesRoute from "../routes/properties.js";
 import amenitiesRoute from "../routes/amenities.js";
 import bookingsRoute from "../routes/bookings.js";
 import reviewsRoute from "../routes/reviews.js";
-import { logRequestDuration } from "../middleware/loggingMiddleWare.js";
+import { logRequestDuration } from "../middleware/loggingMiddleware.js";
 import helmet from "helmet";
 import logger from "../config/logger.js"; // Ensure the path is correct
 import path from "path";
