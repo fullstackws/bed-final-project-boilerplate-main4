@@ -40,30 +40,26 @@ router.post("/", verifyToken, async (req, res) => {
   const { username, name, email, phoneNumber, profilePicture, aboutMe } =
     req.body;
 
-  if (!username || !name || !email || !phoneNumber) {
+  // Ensure that username, name, and phoneNumber are provided
+  if (!username || !name || !phoneNumber) {
     return res
       .status(400)
-      .json({ message: "Username, name, email, and phoneNumber are required" });
+      .json({ message: "Username, name, and phoneNumber are required" });
   }
 
   try {
-    // Check if username or email already exists
-    const existingHost = await prisma.host.findFirst({
-      where: {
-        OR: [{ username }, { email }],
+    // Upsert operation: update if the host exists, or create a new host if it doesn't
+    const newHost = await prisma.host.upsert({
+      where: { username }, // Check if the username exists
+      update: {
+        name, // Replace with new data
+        email, // Email can be non-unique
+        phoneNumber, // Phone number can be non-unique
+        profilePicture,
+        aboutMe,
       },
-    });
-
-    if (existingHost) {
-      return res
-        .status(400)
-        .json({ message: "Username or email already taken" });
-    }
-
-    // Create the new host
-    const newHost = await prisma.host.create({
-      data: {
-        username,
+      create: {
+        username, // Create a new host if it doesn't exist
         name,
         email,
         phoneNumber,
@@ -72,12 +68,12 @@ router.post("/", verifyToken, async (req, res) => {
       },
     });
 
-    // Exclude password from the response (no password is being used)
-    const { password: _, ...hostWithoutPassword } = newHost;
-
-    return res.status(201).json(hostWithoutPassword); // Return the newly created host
+    return res.status(201).json({
+      message: "Host created or updated successfully",
+      host: newHost,
+    });
   } catch (err) {
-    console.error("Error creating host: ", err);
+    console.error("Error upserting host:", err);
     return res.status(500).json({ message: "Server error" });
   }
 });
@@ -111,12 +107,11 @@ router.get("/:id", async (req, res) => {
 // PUT /hosts/:id - Update a host by id
 router.put("/:id", verifyToken, async (req, res) => {
   const { id } = req.params;
-  const { username, email, password, aboutMe } = req.body;
+  const { username, email, aboutMe } = req.body;
 
-  if (!username && !email && !password && !aboutMe) {
+  if (!username && !email && !aboutMe) {
     return res.status(400).json({
-      message:
-        "At least one field (username, email, password, or aboutMe) is required", // 400 Bad Request for missing fields
+      message: "At least one field (username, email, or aboutMe) is required", // 400 Bad Request for missing fields
     });
   }
 
@@ -130,9 +125,6 @@ router.put("/:id", verifyToken, async (req, res) => {
     const updatedData = {};
     if (username) updatedData.username = username;
     if (email) updatedData.email = email;
-    if (password) {
-      updatedData.password = password; // Store the password in plain text
-    }
     if (aboutMe) updatedData.aboutMe = aboutMe;
 
     const updatedHost = await prisma.host.update({
@@ -140,10 +132,7 @@ router.put("/:id", verifyToken, async (req, res) => {
       data: updatedData,
     });
 
-    // Exclude password from the response
-    const { password: _, ...hostWithoutPassword } = updatedHost;
-
-    return res.status(200).json(hostWithoutPassword); // 200 OK for successful update
+    return res.status(200).json(updatedHost); // 200 OK for successful update
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error" }); // 500 Internal Server Error

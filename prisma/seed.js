@@ -39,6 +39,7 @@ async function main() {
           name: amenity.name,
         },
       });
+      console.log(`amenity ${amenity.name} upserted successfully.`);
     } catch (err) {
       console.error(`Failed to upsert amenity: ${amenity.name}`, err);
     }
@@ -60,6 +61,7 @@ async function main() {
           profilePicture: userData.profilePicture,
         },
       });
+      console.log(`User ${userData.username} upserted successfully.`);
     } catch (err) {
       console.error(`Error upserting user ${userData.username}:`, err);
     }
@@ -88,6 +90,7 @@ async function main() {
           aboutMe: hostData.aboutMe,
         },
       });
+      console.log(`Host ${hostData.username} upserted successfully.`);
     } catch (err) {
       console.error(
         `Error creating or updating host ${hostData.username}:`,

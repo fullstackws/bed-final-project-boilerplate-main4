@@ -29,7 +29,7 @@ model Booking {
 
 
 model Host {
-  id             String     @id
+  id             String     @id @default(uuid())
   username       String     @unique
   name           String
   email          String
@@ -40,7 +40,7 @@ model Host {
 }
 
 model Property {
-  id            String    @id
+  id            String    @id @default(uuid())
   title         String
   description   String
   location      String
@@ -67,7 +67,7 @@ model Review {
 }
 
 model User {
-  id             String    @id
+  id             String    @id @default(uuid())
   username       String    @unique
   name           String
   password       String

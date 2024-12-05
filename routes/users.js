@@ -1,6 +1,6 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
-import { verifyToken } from "../middleware/auth.js"; // Assuming you have JWT-based auth
+import { verifyToken } from "../middleware/auth.js"; // Import the JWT authentication middleware
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -56,44 +56,43 @@ router.get("/:id", async (req, res) => {
 
 // POST /users - Create a new user (no required field validation)
 router.post("/", verifyToken, async (req, res) => {
-  const {
-    username,
-    email,
-    password,
-    name,
-    phoneNumber,
-    profilePicture,
-    aboutMe,
-  } = req.body;
+  const { username, email, password, name, phoneNumber, profilePicture } =
+    req.body;
+
+  // Validate required fields
+  if (!username || !email || !password || !name) {
+    return res
+      .status(400)
+      .json({ message: "Username, email, password, and name are required" });
+  }
 
   try {
-    // Check if username or email already exists
-    const existingUser = await prisma.user.findFirst({
-      where: { OR: [{ username }, { email }] },
-    });
-
-    if (existingUser) {
-      return res
-        .status(400)
-        .json({ message: "Username or email already taken" });
-    }
-
-    // Create the new user with the provided fields
-    const newUser = await prisma.user.create({
-      data: {
-        username,
+    // Upsert operation: update if the user exists, or create a new user if it doesn't
+    const newUser = await prisma.user.upsert({
+      where: { username }, // Check if the username exists
+      update: {
+        email, // Replace with new data
+        password,
+        name,
+        phoneNumber,
+        profilePicture,
+      },
+      create: {
+        username, // Create a new user if it doesn't exist
         email,
         password,
         name,
         phoneNumber,
         profilePicture,
-        aboutMe,
       },
     });
 
-    return res.status(201).json(newUser); // Returns the created user
+    return res.status(201).json({
+      message: "User created or updated successfully",
+      user: newUser,
+    });
   } catch (err) {
-    console.error("Error creating user:", err);
+    console.error("Error upserting user:", err);
     return res.status(500).json({ message: "Server error" });
   }
 });
