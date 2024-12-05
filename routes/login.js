@@ -44,10 +44,10 @@ router.post("/", async (req, res) => {
       { expiresIn: "7h" }
     );
 
-    // Log the generated token for debugging (only in non-production environments)
-    if (process.env.NODE_ENV !== "production") {
-      console.log("Generated token for user:", username);
-    }
+    // // Log the generated token for debugging (only in non-production environments)
+    // if (process.env.NODE_ENV !== "production") {
+    //   console.log("Generated token for user:", username);
+    // }
 
     // Return the token in the response
     return res.status(200).json({ token });
