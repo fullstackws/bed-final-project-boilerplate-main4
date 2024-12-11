@@ -6,9 +6,20 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 // GET /users - Fetch all users (without password)
+// GET /users - Fetch all users (optionally filter by username)
 router.get("/", async (req, res) => {
+  const { username } = req.query; // Get the 'username' query parameter
+
   try {
+    const filters = {};
+
+    // If a username query parameter is provided, add it to the filters
+    if (username) {
+      filters.username = { contains: username, mode: "insensitive" }; // Case-insensitive search
+    }
+
     const users = await prisma.user.findMany({
+      where: filters, // Apply the filters here
       select: {
         id: true,
         username: true,
@@ -19,7 +30,7 @@ router.get("/", async (req, res) => {
       },
     });
 
-    return res.status(200).json(users); // Returns all users
+    return res.status(200).json(users); // Returns all users or filtered users
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error" });

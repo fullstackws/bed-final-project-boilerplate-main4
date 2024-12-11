@@ -6,6 +6,7 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 // GET /hosts - Fetch all hosts, optionally filter by name
+// GET /hosts - Fetch all hosts, optionally filter by name
 router.get("/", async (req, res) => {
   const { name } = req.query; // Get the 'name' query parameter
 
@@ -13,9 +14,9 @@ router.get("/", async (req, res) => {
     // Prepare filters
     const filters = {};
 
-    // Apply filter by name (username) if provided
+    // Apply filter by name if provided
     if (name) {
-      filters.username = { contains: name, mode: "insensitive" }; // Case-insensitive search for username
+      filters.name = { contains: name, mode: "insensitive" }; // Case-insensitive search for name
     }
 
     const hosts = await prisma.host.findMany({
@@ -25,6 +26,7 @@ router.get("/", async (req, res) => {
         username: true,
         email: true,
         aboutMe: true,
+        name: true, // Make sure name is selected
       },
     });
 
